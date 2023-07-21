@@ -3,7 +3,8 @@ import Board
 class Piece:
     x = 0
     y = 0
-    isAlive = True
+    is_alive = True
+    type = 0 # 0 means white 1 is black
     board = None
 
     def __init__(self, board):
@@ -16,14 +17,24 @@ class Piece:
         if self.out(newx, newy):
             print("Out of bounds!")
             return 0
+        elif not self.is_valid_move(newx, newy):
+            return 0
+        elif self.board[newx][newy].type == self.type:
+            return 0
+
+        if self.board[newx][newy] != '' and self.board[newx][newy].type != self.type:
+            # eat
+            self.eat(self.board[newx][newy])
         self.x = newx
         self.y = newy
         return 1
 
+    def is_valid_move(self, newx, newy):
+        pass
+
     def eat(self, character):
-        character.isAlive = False
+        character.is_alive = False
         self.board[character.x][character.y] = ''
-        self.move(character.x, character.y)
         return 1
 
     def check(self, king):
@@ -39,16 +50,20 @@ class Pawn(Piece):
         difference_x = character.x - self.x
         difference_y = character.y - self.y
         if difference_x == 1 and difference_y == 1:
-            character.isAlive = False
-            self.move(character.x, character.y)
+            character.is_alive = False
             return 1
         return 0
+
+    def can_eat(self, newx, newy):
+        difference_x = newx - self.x
+        difference_y = newy - self.y
+        return difference_x == 1 and difference_y == 1 and self.board[newx][newy].type != self.type
 
     def is_valid_move(self, newx, newy):
         difference_x = newx - self.x
         difference_y = newy - self.y
 
-        if (difference_x == 1 and difference_y == 0) or (self.isFirstMove and difference_x == 2 and difference_y == 0):
+        if (difference_x == 1 and difference_y == 0) or (self.isFirstMove and difference_x == 2 and difference_y == 0) and self.board[newx][newy].type != self.type:
             return True
         return False
 
@@ -57,10 +72,13 @@ class Pawn(Piece):
             print("Out of bounds!")
             return 0
 
-        if self.is_valid_move(newx, newy):
+        if self.is_valid_move(newx, newy) or self.can_eat(newx,newy):
             self.isFirstMove = False
+            # if can eat
+            if self.can_eat(newx,newy):
+                self.eat(self.board[newx][newy])
             self.x = newx
-            self.y = newy
+            self.y = newy+
             if self.y == 7:
                 self.queening()
             return 1
@@ -157,3 +175,22 @@ class Knight(Piece):
             if self.x + i == newx and self.y + j == newy:
                 return True
         return False
+
+class Bishop(Piece):
+
+
+
+
+    def is_valid_move(self, newx, newy):
+        difference_x = newx - self.x
+        difference_y = newy - self.y
+
+        if difference_y != 0 and difference_x != 0 and difference_y == difference_x:
+            if difference_x < 0: # negative direction
+                for diff in range(difference_x, 1, -1):
+                    if self.board[self.x + diff][self.y + diff] != "":
+                        return False
+            else:
+                for diff in range(1, difference_x):
+                    if self.board[self.x + diff][self.y + diff] != "":
+                        return False
